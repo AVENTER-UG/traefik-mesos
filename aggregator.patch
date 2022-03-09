@@ -1,0 +1,13 @@
+--- traefik_repo/pkg/provider/aggregator/aggregator.go	2022-03-09 18:28:54.863865717 +0100
++++ traefik_repo/pkg/provider/aggregator/aggregator_b.go	2022-03-09 18:29:29.543343440 +0100
+@@ -34,6 +34,10 @@
+ 		p.quietAddProvider(conf.Marathon)
+ 	}
+ 
++	if conf.Mesos != nil {
++		p.quietAddProvider(conf.Mesos)
++	}
++
+ 	if conf.Rest != nil {
+ 		p.quietAddProvider(conf.Rest)
+ 	}
