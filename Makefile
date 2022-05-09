@@ -2,7 +2,7 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v2.6.3
+TAG=v2.6.6
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 IMAGEFULLNAME=avhost/${IMAGENAME}
 BUILDDATE=`date -u +%Y-%m-%d`
@@ -37,7 +37,7 @@ build:
 	cp static/mesos.svg traefik_repo/webui/static/statics/providers/
 	cd traefik_repo; $(MAKE)
 
-build-docker:
+build-docker: build
 	@echo ">>>> Build docker image"
 	docker buildx build  --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${TAG} .
 	docker buildx build  --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${TAG}-${BUILDDATE} .
@@ -46,7 +46,6 @@ build-docker:
 publish:
 	@echo ">>>> Publish it to repo"
 	docker push ${IMAGEFULLNAME}:${TAG}
-	docker push ${IMAGEFULLNAME}:${TAG}-${BUILDDATE} 
 	docker push ${IMAGEFULLNAME}:latest 
 
 clean:
