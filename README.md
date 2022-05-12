@@ -1,4 +1,4 @@
-# Apache Mesos provider for Traefik
+# Traefik Provider for Apache Mesos
 
 These provider will add the functionality to use traefik with Apache Mesos.
 
