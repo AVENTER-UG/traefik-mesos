@@ -35,7 +35,7 @@ build:
 	@cd traefik_repo; go mod tidy
 	cd traefik_repo; $(MAKE) generate-webui
 	cp static/mesos.svg traefik_repo/webui/static/statics/providers/
-	cd traefik_repo; $(MAKE)
+	export VERSION=${TAG}; cd traefik_repo; $(MAKE)
 
 build-docker: build
 	@echo ">>>> Build docker image"
