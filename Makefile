@@ -6,6 +6,8 @@ TAG=v2.7.0
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 IMAGEFULLNAME=avhost/${IMAGENAME}
 BUILDDATE=`date -u +%Y-%m-%d`
+VERSION_TU=$(subst -, ,$(VERSION:v%=%))	
+BUILD_VERSION=$(word 1,$(VERSION_TU))
 
 .PHONY: help build build-docker clean all
 
@@ -21,7 +23,7 @@ help:
 .DEFAULT_GOAL := all
 
 build: 
-	@echo ">>>> Build traefik executable"
+	@echo ">>>> Build traefik executable ${BUILD_VERSION}"
 	@if [ ! -d "traefik_repo" ] ; then \
 		git clone git@github.com:traefik/traefik.git traefik_repo; \
 	fi
@@ -35,7 +37,7 @@ build:
 	@cd traefik_repo; go mod tidy
 	cd traefik_repo; $(MAKE) generate-webui
 	cp static/mesos.svg traefik_repo/webui/static/statics/providers/
-	export VERSION=${TAG}; cd traefik_repo; $(MAKE)
+	export VERSION=${BUILD_VERSION}; cd traefik_repo; $(MAKE)
 
 build-docker: build
 	@echo ">>>> Build docker image"
