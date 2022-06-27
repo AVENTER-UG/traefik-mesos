@@ -2,11 +2,11 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v2.7.1
+TAG=v2.7.2
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 IMAGEFULLNAME=avhost/${IMAGENAME}
 BUILDDATE=`date -u +%Y-%m-%d`
-VERSION_TU=$(subst -, ,$(VERSION:v%=%))	
+VERSION_TU=$(subst -, ,$(TAG:v%=%))	
 BUILD_VERSION=$(word 1,$(VERSION_TU))
 
 .PHONY: help build build-docker clean all
