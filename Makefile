@@ -2,7 +2,7 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v2.7.2
+TAG=v2.7.3
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 IMAGEFULLNAME=avhost/${IMAGENAME}
 BUILDDATE=`date -u +%Y-%m-%d`
@@ -55,4 +55,4 @@ clean:
 
 
 
-all: build build-docker clean
+all: build build-docker publish clean
