@@ -35,7 +35,7 @@ jobs:
           name: traefik
           path: .
       - name: Create release archive
-        run: tar -czvf release.tar.gz traefik README.md LICENSE
+        run: tar -czvf release.tar.gz traefik README.md LICENSE.md
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
