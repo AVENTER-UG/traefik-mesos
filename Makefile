@@ -25,7 +25,7 @@ help:
 build: 
 	@echo ">>>> Build traefik executable ${BUILD_VERSION}"
 	@if [ ! -d "traefik_repo" ] ; then \
-		git clone git@github.com:traefik/traefik.git traefik_repo; \
+		git clone https://github.com/traefik/traefik.git traefik_repo; \
 	fi
 	cd traefik_repo;	git checkout $(TAG)	
 	patch -u traefik_repo/pkg/config/static/static_config.go -i static_config.patch
