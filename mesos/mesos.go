@@ -183,7 +183,7 @@ func (p *Provider) checkContainer(task MesosTask) bool {
 	agentHostname, agentPort, err := p.getAgent(task.SlaveID)
 
 	if err != nil {
-		p.logger.Error("CheckContainer: Error in get AgendData from Mesos: " + err.Error())
+		p.logger.Error("CheckContainer: Error in get AgentData from Mesos: " + err.Error())
 		return false
 	}
 
@@ -226,7 +226,7 @@ func (p *Provider) getAgent(slaveID string) (string, int, error) {
 	data, err := io.ReadAll(res.Body)
 	var agents MesosAgent
 	if err := json.Unmarshal(data, &agents); err != nil {
-		p.logger.Error("getAgent: Error in AgentData from Mesos: " + err.Error())
+		p.logger.Error("getAgent: Error in AgentData from Mesos  " + p.Endpoint + " with error: " + err.Error())
 		return "", 0, err
 	}
 
