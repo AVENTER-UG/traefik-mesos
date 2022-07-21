@@ -90,10 +90,6 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 				select {
 				case <-ticker.C:
 					tasks := p.getTasks()
-					if tasks == nil {
-						logrus.Error("No Data from Mesos")
-						continue
-					}
 
 					// collect all mesos tasks and combine the belong one.
 					for _, task := range tasks.Tasks {
@@ -171,16 +167,16 @@ func (p *Provider) getTasks() MesosTasks {
 
 	if res.StatusCode != http.StatusOK {
 		fmt.Errorf("received non-ok response code: %d", res.StatusCode)
-		return nil
+		return MesosTasks{}
 	}
 
 	p.logger.Info("Get Data from Mesos")
 
 	var tasks MesosTasks
-	err := json.NewDecoder(res.Body).Decode(&tasks)
+	err = json.NewDecoder(res.Body).Decode(&tasks)
 	if err != nil {
 		p.logger.Error("Error in Data from Mesos: " + err.Error())
-		return nil
+		return MesosTasks{}
 	}
 	return tasks
 }
