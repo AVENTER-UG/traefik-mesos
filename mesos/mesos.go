@@ -89,11 +89,9 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 			for {
 				select {
 				case <-ticker.C:
-					data, _ := p.getTasks()
-
-					var tasks MesosTasks
-					if err := json.Unmarshal(data, &tasks); err != nil {
-						p.logger.Error("Error in Data from Mesos: " + err.Error())
+					tasks := p.getTasks()
+					if tasks == nil {
+						logrus.Error("No Data from Mesos")
 						continue
 					}
 
@@ -155,7 +153,7 @@ func (p *Provider) checkTraefikLabels(task MesosTask) bool {
 	return false
 }
 
-func (p *Provider) getTasks() ([]byte, error) {
+func (p *Provider) getTasks() MesosTasks {
 	client := &http.Client{}
 	client.Transport = &http.Transport{
 		TLSClientConfig: &cTls.Config{InsecureSkipVerify: true},
@@ -172,11 +170,19 @@ func (p *Provider) getTasks() ([]byte, error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("received non-ok response code: %d", res.StatusCode)
+		fmt.Errorf("received non-ok response code: %d", res.StatusCode)
+		return nil
 	}
 
 	p.logger.Info("Get Data from Mesos")
-	return io.ReadAll(res.Body)
+
+	var tasks MesosTasks
+	err := json.NewDecoder(res.Body).Decode(&tasks)
+	if err != nil {
+		p.logger.Error("Error in Data from Mesos: " + err.Error())
+		return nil
+	}
+	return tasks
 }
 
 func (p *Provider) checkContainer(task MesosTask) bool {
