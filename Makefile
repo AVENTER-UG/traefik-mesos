@@ -2,7 +2,7 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v2.8.1
+TAG=v2.8.2
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 IMAGEFULLNAME=avhost/${IMAGENAME}
 BUILDDATE=`date -u +%Y-%m-%d`
@@ -34,7 +34,6 @@ build:
 	@cd traefik_repo; go get -d
 	@cd traefik_repo; go get github.com/mesos/mesos-go/api/v0/detector/zoo
 	@cd traefik_repo; go mod vendor
-	@cd traefik_repo; go mod tidy
 	cd traefik_repo; $(MAKE) generate-webui
 	cp static/mesos.svg traefik_repo/webui/static/statics/providers/
 	export VERSION=${BUILD_VERSION}; cd traefik_repo; $(MAKE)
