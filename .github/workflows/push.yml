@@ -40,10 +40,6 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: 14
-      - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
