@@ -47,21 +47,29 @@ func (p *Provider) buildUDPServiceConfiguration(ctx context.Context, containerNa
 func (p *Provider) getUDPServers(portName string, containerName string) []dynamic.UDPServer {
 	var servers []dynamic.UDPServer
 	for _, task := range p.mesosConfig[containerName].Tasks {
-		// ever take the first IP in the list
-		ip := task.Statuses[0].ContainerStatus.NetworkInfos[0].IPAddresses[0].IPAddress
-		if len(task.Discovery.Ports.Ports) > 0 {
-			for _, port := range task.Discovery.Ports.Ports {
-				if portName != port.Name || port.Protocol != "udp" {
-					continue
+		for _, status := range task.Statuses {
+			// the host ip is only visible during starting task. Have to find out why
+			if status.State == "TASK_STARTING" {
+				for _, network := range status.ContainerStatus.NetworkInfos {
+					for _, ip := range network.IPAddresses {
+						if ip.Protocol == "IPv4" && len(task.Discovery.Ports.Ports) > 0 {
+							for _, port := range task.Discovery.Ports.Ports {
+								if portName != port.Name || port.Protocol != "udp" {
+									continue
+								}
+								po := strconv.Itoa(port.Number)
+								server := dynamic.UDPServer{
+									Address: net.JoinHostPort(ip.IPAddress, po),
+									Port:    po,
+								}
+								servers = append(servers, server)
+							}
+						}
+					}
 				}
-				po := strconv.Itoa(port.Number)
-				server := dynamic.UDPServer{
-					Address: net.JoinHostPort(ip, po),
-					Port:    po,
-				}
-				servers = append(servers, server)
 			}
 		}
 	}
+
 	return servers
 }
