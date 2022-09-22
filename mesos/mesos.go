@@ -98,7 +98,7 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 							if task.Labels != nil {
 								if p.checkTraefikLabels(task) {
 									if p.checkContainer(task) {
-										containerName := task.ID
+										containerName := task.Name
 										if p.mesosConfig[containerName] == nil {
 											p.mesosConfig[containerName] = &MesosTasks{}
 										}
@@ -161,7 +161,8 @@ func (p *Provider) getTasks() MesosTasks {
 	res, err := client.Do(req)
 
 	if err != nil {
-		p.logger.Fatal(err)
+		p.logger.Error("Error during get tasks: ", err.Error())
+		return MesosTasks{}
 	}
 	defer res.Body.Close()
 
@@ -217,7 +218,8 @@ func (p *Provider) getAgent(slaveID string) (string, int, error) {
 	res, err := client.Do(req)
 
 	if err != nil {
-		p.logger.Fatal(err)
+		p.logger.Error("Error during get agent: ", err.Error())
+		return "", 0, err
 	}
 	defer res.Body.Close()
 
@@ -259,7 +261,8 @@ func (p *Provider) getContainersOfAgent(agentHostname string, agentPort int) (Me
 	res, err := client.Do(req)
 
 	if err != nil {
-		p.logger.Fatal(err)
+		p.logger.Error("Error during get container: ", err.Error())
+		return MesosAgentContainers{}, err
 	}
 	defer res.Body.Close()
 

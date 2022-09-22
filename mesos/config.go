@@ -14,7 +14,7 @@ func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuratio
 	for _, tasks := range p.mesosConfig {
 		task := tasks.Tasks[0]
 		// The first Task is the leading one
-		containerName := task.ID
+		containerName := task.Name
 		//	res2B, _ := json.Marshal(containerName)
 		//fmt.Println(string(res2B))
 		for _, label := range task.Labels {
@@ -41,7 +41,7 @@ func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuratio
 			Name:   task.Name,
 			Labels: labels,
 		}
-		provider.BuildRouterConfiguration(ctx, confFromLabel.HTTP, task.ID, p.defaultRuleTpl, model)
+		provider.BuildRouterConfiguration(ctx, confFromLabel.HTTP, containerName, p.defaultRuleTpl, model)
 
 		configurations[containerName] = confFromLabel
 	}
