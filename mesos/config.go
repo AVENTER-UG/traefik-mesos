@@ -2,6 +2,7 @@ package mesos
 
 import (
 	"context"
+	"strings"
 
 	"github.com/traefik/traefik/v2/pkg/config/dynamic"
 	"github.com/traefik/traefik/v2/pkg/config/label"
@@ -14,11 +15,13 @@ func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuratio
 	for _, tasks := range p.mesosConfig {
 		task := tasks.Tasks[0]
 		// The first Task is the leading one
-		containerName := task.Name
+		containerName := task.ID
 		//	res2B, _ := json.Marshal(containerName)
 		//fmt.Println(string(res2B))
 		for _, label := range task.Labels {
-			labels[label.Key] = label.Value
+			key := strings.ReplaceAll(label.Key, "__mesos_taskid__", strings.ReplaceAll(task.ID, ".", "_"))
+			value := strings.ReplaceAll(label.Value, "__mesos_taskid__", strings.ReplaceAll(task.ID, ".", "_"))
+			labels[key] = value
 		}
 		confFromLabel, err := label.DecodeConfiguration(labels)
 		if err != nil {

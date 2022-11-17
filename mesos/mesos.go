@@ -5,6 +5,7 @@ import (
 	cTls "crypto/tls"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"net/http"
 	"strconv"
@@ -34,16 +35,17 @@ var (
 
 // Provider holds configuration of the provider.
 type Provider struct {
-	Endpoint       string          `description:"Mesos server endpoint. You can also specify multiple endpoint for Mesos"`
-	SSL            bool            `description:"Enable Endpoint SSL"`
-	Principal      string          `Description:"Principal to authorize agains Mesos Manager"`
-	Secret         string          `Description:"Secret authorize agains Mesos Manager"`
-	PollInterval   ptypes.Duration `description:"Polling interval for endpoint." json:"pollInt"`
-	PollTimeout    ptypes.Duration `description:"Polling timeout for endpoint." json:"pollTime"`
-	DefaultRule    string          `description:"Default rule." json:"defaultRule,omitempty" toml:"defaultRule,omitempty" yaml:"defaultRule,omitempty"`
-	logger         log.Logger
-	mesosConfig    map[string]*MesosTasks
-	defaultRuleTpl *template.Template
+	Endpoint              string          `description:"Mesos server endpoint. You can also specify multiple endpoint for Mesos"`
+	SSL                   bool            `description:"Enable Endpoint SSL"`
+	Principal             string          `Description:"Principal to authorize agains Mesos Manager"`
+	Secret                string          `Description:"Secret authorize agains Mesos Manager"`
+	PollInterval          ptypes.Duration `description:"Polling interval for endpoint." json:"pollInt"`
+	PollTimeout           ptypes.Duration `description:"Polling timeout for endpoint." json:"pollTime"`
+	DefaultRule           string          `description:"Default rule." json:"defaultRule,omitempty" toml:"defaultRule,omitempty" yaml:"defaultRule,omitempty"`
+	logger                log.Logger
+	mesosConfig           map[string]*MesosTasks
+	defaultRuleTpl        *template.Template
+	lastConfigurationHash uint64
 }
 
 // SetDefaults sets the default values.
@@ -91,14 +93,32 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 				case <-ticker.C:
 					tasks := p.getTasks()
 
+					// build hash to find out if the config changes
+					fnvHasher := fnv.New64()
+					tasksString, _ := json.Marshal(&tasks)
+					_, err := fnvHasher.Write(tasksString)
+
+					if err != nil {
+						p.logger.Errorf("cannot hash mesos tasks data: ", err.Error())
+						continue
+					}
+
+					hash := fnvHasher.Sum64()
+					if hash == p.lastConfigurationHash {
+						continue
+					}
+
+					p.lastConfigurationHash = hash
+
+					p.logger.Info("Update Traefik Config")
+
 					// collect all mesos tasks and combine the belong one.
 					for _, task := range tasks.Tasks {
-						switch task.State {
-						case "TASK_RUNNING":
+						if task.State == "TASK_RUNNING" {
 							if task.Labels != nil {
 								if p.checkTraefikLabels(task) {
 									if p.checkContainer(task) {
-										containerName := task.Name
+										containerName := task.ID
 										if p.mesosConfig[containerName] == nil {
 											p.mesosConfig[containerName] = &MesosTasks{}
 										}
