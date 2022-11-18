@@ -47,6 +47,12 @@ As example:
 <img src="docs/content/assets/img/traefik.logo.png" alt="Traefik" title="Traefik" />
 </p>
 
+## Special provider features
+
+### Dynamic Names
+
+All "__mesos_taskid__" strings in the labels (key and value) will be replaced by the unique Mesos TaskID.
+
 ## Doku and links to the official traefik
 
 [![Build Status SemaphoreCI](https://semaphoreci.com/api/v1/containous/traefik/branches/master/shields_badge.svg)](https://semaphoreci.com/containous/traefik)
