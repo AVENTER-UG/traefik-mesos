@@ -46,6 +46,7 @@ type Provider struct {
 	mesosConfig           map[string]*MesosTasks
 	defaultRuleTpl        *template.Template
 	lastConfigurationHash uint64
+	lastUpdate            time.Time
 }
 
 // SetDefaults sets the default values.
@@ -55,6 +56,7 @@ func (p *Provider) SetDefaults() {
 	p.PollInterval = ptypes.Duration(10 * time.Second)
 	p.PollTimeout = ptypes.Duration(10 * time.Second)
 	p.DefaultRule = DefaultTemplateRule
+	p.lastUpdate = time.Now()
 }
 
 // Init the provider.
@@ -103,12 +105,17 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 						continue
 					}
 
-					hash := fnvHasher.Sum64()
-					if hash == p.lastConfigurationHash {
-						continue
+					// check if the configuration has changed or the last update is 10 minutes ago
+					timeNow := time.Now()
+					timeDiff := timeNow.Sub(p.lastUpdate).Minutes()
+					if timeDiff <= 10 {
+						hash := fnvHasher.Sum64()
+						if hash == p.lastConfigurationHash {
+							continue
+						}
+						p.lastConfigurationHash = hash
 					}
-
-					p.lastConfigurationHash = hash
+					p.lastUpdate = timeNow
 
 					p.logger.Info("Update Traefik Config")
 
