@@ -19,6 +19,20 @@ principal = "<mesos_username>"
 secret = "<mesos_password>"
 SSL = true
 ``` 
+### Supported provider parameters
+
+| Parameter | default value | Description |
+| --- | --- | --- |
+| Endpoint              | 127.0.0.1:5050 | Mesos server endpoint. You can also specify multiple endpoint for Mesos |
+| SSL                   | false | Enable Endpoint SSL | 
+| Principal             || Principal to authorize agains Mesos Manager |
+| Secret                || Secret authorize agains Mesos Manager |
+| PollInterval          | 10s | Polling interval for endpoint | 
+| PollTimeout           | 10s | Polling timeout for endpoint |
+| ForceUpdateIntervall  | 10m | Intervall to force an update |
+
+
+
 
 ## How to add Traefik routes and services?
 

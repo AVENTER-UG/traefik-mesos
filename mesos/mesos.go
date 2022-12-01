@@ -35,13 +35,14 @@ var (
 
 // Provider holds configuration of the provider.
 type Provider struct {
-	Endpoint              string          `description:"Mesos server endpoint. You can also specify multiple endpoint for Mesos"`
-	SSL                   bool            `description:"Enable Endpoint SSL"`
+	Endpoint              string          `Description:"Mesos server endpoint. You can also specify multiple endpoint for Mesos"`
+	SSL                   bool            `Description:"Enable Endpoint SSL"`
 	Principal             string          `Description:"Principal to authorize agains Mesos Manager"`
 	Secret                string          `Description:"Secret authorize agains Mesos Manager"`
-	PollInterval          ptypes.Duration `description:"Polling interval for endpoint." json:"pollInt"`
-	PollTimeout           ptypes.Duration `description:"Polling timeout for endpoint." json:"pollTime"`
-	DefaultRule           string          `description:"Default rule." json:"defaultRule,omitempty" toml:"defaultRule,omitempty" yaml:"defaultRule,omitempty"`
+	PollInterval          ptypes.Duration `Description:"Polling interval for endpoint." json:"pollInt"`
+	PollTimeout           ptypes.Duration `Description:"Polling timeout for endpoint." json:"pollTime"`
+	DefaultRule           string          `Description:"Default rule." json:"defaultRule,omitempty" toml:"defaultRule,omitempty" yaml:"defaultRule,omitempty"`
+	ForceUpdateIntervall  time.Duration   `Description:"Intervall to force an update."`
 	logger                log.Logger
 	mesosConfig           map[string]*MesosTasks
 	defaultRuleTpl        *template.Template
@@ -56,6 +57,7 @@ func (p *Provider) SetDefaults() {
 	p.PollInterval = ptypes.Duration(10 * time.Second)
 	p.PollTimeout = ptypes.Duration(10 * time.Second)
 	p.DefaultRule = DefaultTemplateRule
+	p.ForceUpdateIntervall = time.Duration(10 * time.Minute)
 	p.lastUpdate = time.Now()
 }
 
@@ -108,7 +110,8 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 					// check if the configuration has changed or the last update is 10 minutes ago
 					timeNow := time.Now()
 					timeDiff := timeNow.Sub(p.lastUpdate).Minutes()
-					if timeDiff <= 10 {
+
+					if timeDiff <= p.ForceUpdateIntervall.Minutes() {
 						hash := fnvHasher.Sum64()
 						if hash == p.lastConfigurationHash {
 							continue
