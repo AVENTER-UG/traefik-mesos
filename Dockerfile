@@ -7,4 +7,4 @@ RUN apk update
 RUN apk add bash
 
 WORKDIR /data
-CMD "/traefik --configfile traefik.toml"
+CMD "/traefik --configfile /data/traefik.toml"
