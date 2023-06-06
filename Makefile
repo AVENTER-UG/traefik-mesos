@@ -2,12 +2,13 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v2.9.10
+TAG=v2.10.1
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 IMAGEFULLNAME=avhost/${IMAGENAME}
 BUILDDATE=`date -u +%Y-%m-%d`
 VERSION_TU=$(subst -, ,$(TAG:v%=%))	
 BUILD_VERSION=$(word 1,$(VERSION_TU))
+LASTCOMMIT=$(shell git log -1 --pretty=short | tail -n 1 | tr -d " ")
 
 .PHONY: help build build-docker clean all
 
@@ -21,6 +22,16 @@ help:
 			@echo ${TAG}
 
 .DEFAULT_GOAL := all
+
+ifeq (${BRANCH}, master) 
+        BRANCH=latest
+endif
+
+ifneq ($(shell echo $(LASTCOMMIT) | grep -E '^v|([0-9]+\.){0,2}(\*|[0-9]+)'),)
+        BRANCH=${LASTCOMMIT}
+else
+        BRANCH=latest
+endif
 
 build: 
 	@echo ">>>> Build traefik executable ${BUILD_VERSION}"
@@ -45,9 +56,11 @@ build-docker: build
 
 publish:
 	@echo ">>>> Publish it to repo"
+	docker buildx create --use --name buildkit
 	docker buildx build --platform linux/arm64,linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${TAG} .
 	docker buildx build --platform linux/arm64,linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${TAG}-${BUILDDATE} .
 	docker buildx build --platform linux/arm64,linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:latest .
+	docker buildx rm buildkit
 
 clean:
 	rm -rf traefik_repo
