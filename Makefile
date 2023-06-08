@@ -50,15 +50,14 @@ build:
 	export VERSION=${BUILD_VERSION}; cd traefik_repo; $(MAKE)
 
 build-docker: build
-	@echo ">>>> Build docker image"
-	docker build -t ${IMAGEFULLNAME}:${TAG} .
+	@echo ">>>> Build docker image" ${BRANCH}
 	docker build -t ${IMAGEFULLNAME}:latest . 
 
-publish:
-	@echo ">>>> Publish it to repo"
+push:
+	@echo ">>>> Publish it to repo" ${BRANCH}
 	docker buildx create --use --name buildkit
-	docker buildx build --platform linux/arm64,linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${TAG} .
-	docker buildx build --platform linux/arm64,linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${TAG}-${BUILDDATE} .
+	docker buildx build --platform linux/arm64,linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH} .
+	docker buildx build --platform linux/arm64,linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH}-${BUILDDATE} .
 	docker buildx build --platform linux/arm64,linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:latest .
 	docker buildx rm buildkit
 
@@ -67,4 +66,4 @@ clean:
 
 
 
-all: build build-docker publish clean
+all: build-docker clean

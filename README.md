@@ -29,7 +29,7 @@ SSL = true
 | Secret                || Secret authorize agains Mesos Manager |
 | PollInterval          | 10s | Polling interval for endpoint | 
 | PollTimeout           | 10s | Polling timeout for endpoint |
-| ForceUpdateIntervall  | 10m | Intervall to force an update |
+| ForceUpdateInterval  | 10m | Intervall to force an update |
 
 
 

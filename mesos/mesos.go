@@ -42,7 +42,7 @@ type Provider struct {
 	PollInterval          ptypes.Duration `Description:"Polling interval for endpoint." json:"pollInt"`
 	PollTimeout           ptypes.Duration `Description:"Polling timeout for endpoint." json:"pollTime"`
 	DefaultRule           string          `Description:"Default rule." json:"defaultRule,omitempty" toml:"defaultRule,omitempty" yaml:"defaultRule,omitempty"`
-	ForceUpdateIntervall  time.Duration   `Description:"Intervall to force an update."`
+	ForceUpdateInterval   time.Duration   `Description:"Interval to force an update."`
 	logger                log.Logger
 	mesosConfig           map[string]*MesosTasks
 	defaultRuleTpl        *template.Template
@@ -57,7 +57,7 @@ func (p *Provider) SetDefaults() {
 	p.PollInterval = ptypes.Duration(10 * time.Second)
 	p.PollTimeout = ptypes.Duration(10 * time.Second)
 	p.DefaultRule = DefaultTemplateRule
-	p.ForceUpdateIntervall = time.Duration(10 * time.Minute)
+	p.ForceUpdateInterval = time.Duration(10 * time.Minute)
 	p.lastUpdate = time.Now()
 }
 
@@ -111,7 +111,7 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 					timeNow := time.Now()
 					timeDiff := timeNow.Sub(p.lastUpdate).Minutes()
 
-					if timeDiff <= p.ForceUpdateIntervall.Minutes() {
+					if timeDiff <= p.ForceUpdateInterval.Minutes() {
 						hash := fnvHasher.Sum64()
 						if hash == p.lastConfigurationHash {
 							continue

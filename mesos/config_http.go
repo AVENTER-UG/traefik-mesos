@@ -24,7 +24,7 @@ func (p *Provider) buildHTTPServiceConfiguration(ctx context.Context, containerN
 		task := p.mesosConfig[containerName].Tasks[0]
 		if len(task.Discovery.Ports.Ports) > 0 {
 			for _, port := range task.Discovery.Ports.Ports {
-				if len(port.Name) == 0 || port.Protocol != "tcp" {
+				if len(port.Name) == 0 || port.Protocol == "udp" {
 					continue
 				}
 				if port.Name != service.Service {
@@ -58,12 +58,25 @@ func (p *Provider) getHTTPServers(portName string, containerName string) []dynam
 					for _, ip := range network.IPAddresses {
 						if ip.Protocol == "IPv4" && len(task.Discovery.Ports.Ports) > 0 {
 							for _, port := range task.Discovery.Ports.Ports {
-								if portName != port.Name || port.Protocol != "tcp" {
+								if portName != port.Name || port.Protocol == "udp" {
 									continue
 								}
 								po := strconv.Itoa(port.Number)
+
+								// set default protocol
+								protocol := "http"
+
+								if port.Protocol == "wss" {
+									protocol = "wss"
+								}
+								if port.Protocol == "h2c" {
+									protocol = "h2c"
+								}
+								if port.Protocol == "https" {
+									protocol = "https"
+								}
 								server := dynamic.Server{
-									URL: fmt.Sprintf("http://%s", net.JoinHostPort(ip.IPAddress, po)),
+									URL: fmt.Sprintf("%s://%s", protocol, net.JoinHostPort(ip.IPAddress, po)),
 								}
 								servers = append(servers, server)
 							}
