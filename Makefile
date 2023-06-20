@@ -8,7 +8,7 @@ IMAGEFULLNAME=avhost/${IMAGENAME}
 BUILDDATE=`date -u +%Y-%m-%d`
 VERSION_TU=$(subst -, ,$(TAG:v%=%))	
 BUILD_VERSION=$(word 1,$(VERSION_TU))
-LASTCOMMIT=$(shell git log -1 --pretty=short | tail -n 1 | tr -d " ")
+LASTCOMMIT=$(shell git log -1 --pretty=short | tail -n 1 | tr -d " " | tr -d "UPDATE:")
 
 .PHONY: help build build-docker clean all
 
