@@ -38,7 +38,7 @@ build:
 	@if [ ! -d "traefik_repo" ] ; then \
 		git clone https://github.com/traefik/traefik.git traefik_repo; \
 	fi
-	cd traefik_repo;	git checkout $(TAG)	
+	cd traefik_repo;	git checkout $(TAG)
 	patch -u traefik_repo/pkg/config/static/static_config.go -i static_config.patch
 	patch -u traefik_repo/pkg/provider/aggregator/aggregator.go -i aggregator.patch
 	cp -pr mesos traefik_repo/pkg/provider/
@@ -56,9 +56,9 @@ build-docker: build
 push:
 	@echo ">>>> Publish it to repo" ${BRANCH}
 	docker buildx create --use --name buildkit
-	docker buildx build --platform linux/arm64,linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH} .
-	docker buildx build --platform linux/arm64,linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH}-${BUILDDATE} .
-	docker buildx build --platform linux/arm64,linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:latest .
+	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH} .
+	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH}-${BUILDDATE} .
+	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:latest .
 	docker buildx rm buildkit
 
 clean:

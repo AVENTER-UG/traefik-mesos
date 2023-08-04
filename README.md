@@ -1,6 +1,14 @@
 # Traefik Provider for Apache Mesos
 
+[![Issues](https://img.shields.io/static/v1?label=&message=Issues&color=brightgreen)](https://github.com/m3scluster/traefik-mesos/issues)
+[![Chat](https://img.shields.io/static/v1?label=&message=Chat&color=brightgreen)](https://matrix.to/#/#mesos:matrix.aventer.biz?via=matrix.aventer.biz)
+[![Docker Pulls](https://img.shields.io/docker/pulls/avhost/traefik_mesos)](https://hub.docker.com/repository/docker/avhost/traefik_mesos/)
+
 These provider will add the functionality to use traefik with Apache Mesos.
+
+## Issues
+
+To open an issue, please use this place: https://github.com/m3scluster/traefik-mesos/issues
 
 ## How to use the docker image?
 

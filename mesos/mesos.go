@@ -110,16 +110,18 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 					// check if the configuration has changed or the last update is 10 minutes ago
 					timeNow := time.Now()
 					timeDiff := timeNow.Sub(p.lastUpdate).Minutes()
+					hash := fnvHasher.Sum64()
 
-					if timeDiff <= p.ForceUpdateInterval.Minutes() {
-						hash := fnvHasher.Sum64()
+					if timeDiff >= p.ForceUpdateInterval.Minutes() {
+						p.logger.Info("Force Update Traefik Config")
+					} else {
 						if hash == p.lastConfigurationHash {
 							continue
 						}
-						p.lastConfigurationHash = hash
 					}
-					p.lastUpdate = timeNow
 
+					p.lastUpdate = timeNow
+					p.lastConfigurationHash = hash
 					p.logger.Info("Update Traefik Config")
 
 					// collect all mesos tasks and combine the belong one.
