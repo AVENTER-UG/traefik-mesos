@@ -60,7 +60,6 @@ As example:
     "traefik.http.middlewares.homepage.redirectscheme.scheme": "https",
     "traefik.http.routers.homepage.rule": "Host(`your.example.com`)",
     "traefik.http.routers.homepage-ssl.rule": "Host(`your.example.com`)",
-    "traefik.http.routers.homepage-ssl.tls.certresolver": "sslcert",
     "traefik.http.routers.homepage-ssl.entrypoints": "websecure"
 ```
 

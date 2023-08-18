@@ -13,40 +13,48 @@ func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuratio
 	configurations := make(map[string]*dynamic.Configuration)
 	labels := make(map[string]string)
 	for _, tasks := range p.mesosConfig {
-		task := tasks.Tasks[0]
-		// The first Task is the leading one
-		containerName := task.ID
-		//	res2B, _ := json.Marshal(containerName)
-		//fmt.Println(string(res2B))
-		for _, label := range task.Labels {
-			key := strings.ReplaceAll(label.Key, "__mesos_taskid__", strings.ReplaceAll(task.ID, ".", "_"))
-			value := strings.ReplaceAll(label.Value, "__mesos_taskid__", strings.ReplaceAll(task.ID, ".", "_"))
-			labels[key] = value
-		}
-		confFromLabel, err := label.DecodeConfiguration(labels)
-		if err != nil {
-			p.logger.Error("Error in DecodeConfiguration: " + err.Error())
-			return nil
+		var task MesosTask
+		// search the running task
+		for _, cTask := range tasks.Tasks {
+			if cTask.State == "TASK_RUNNING" {
+				task = cTask
+			}
 		}
 
-		p.buildTCPServiceConfiguration(ctx, containerName, confFromLabel.TCP)
-		provider.BuildTCPRouterConfiguration(ctx, confFromLabel.TCP)
+		if task.Labels != nil {
+			containerName := task.ID
+			//	res2B, _ := json.Marshal(containerName)
+			//fmt.Println(string(res2B))
+			for _, label := range task.Labels {
+				key := strings.ReplaceAll(label.Key, "__mesos_taskid__", strings.ReplaceAll(task.ID, ".", "_"))
+				value := strings.ReplaceAll(label.Value, "__mesos_taskid__", strings.ReplaceAll(task.ID, ".", "_"))
+				labels[key] = value
+			}
+			confFromLabel, err := label.DecodeConfiguration(labels)
+			if err != nil {
+				p.logger.Warnf("Ignore Error in DecodeConfiguration (%s): %s", task.Name, err.Error())
+				continue
+			}
 
-		p.buildUDPServiceConfiguration(ctx, containerName, confFromLabel.UDP)
-		provider.BuildUDPRouterConfiguration(ctx, confFromLabel.UDP)
+			p.buildTCPServiceConfiguration(ctx, containerName, confFromLabel.TCP)
+			provider.BuildTCPRouterConfiguration(ctx, confFromLabel.TCP)
 
-		p.buildHTTPServiceConfiguration(ctx, containerName, confFromLabel.HTTP)
+			p.buildUDPServiceConfiguration(ctx, containerName, confFromLabel.UDP)
+			provider.BuildUDPRouterConfiguration(ctx, confFromLabel.UDP)
 
-		model := struct {
-			Name   string
-			Labels map[string]string
-		}{
-			Name:   task.Name,
-			Labels: labels,
+			p.buildHTTPServiceConfiguration(ctx, containerName, confFromLabel.HTTP)
+
+			model := struct {
+				Name   string
+				Labels map[string]string
+			}{
+				Name:   task.Name,
+				Labels: labels,
+			}
+			provider.BuildRouterConfiguration(ctx, confFromLabel.HTTP, containerName, p.defaultRuleTpl, model)
+
+			configurations[containerName] = confFromLabel
 		}
-		provider.BuildRouterConfiguration(ctx, confFromLabel.HTTP, containerName, p.defaultRuleTpl, model)
-
-		configurations[containerName] = confFromLabel
 	}
 
 	return provider.Merge(ctx, configurations)

@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	ptypes "github.com/traefik/paerser/types"
 	"github.com/traefik/traefik/v2/pkg/config/dynamic"
 	"github.com/traefik/traefik/v2/pkg/job"
 	"github.com/traefik/traefik/v2/pkg/log"
@@ -35,14 +34,14 @@ var (
 
 // Provider holds configuration of the provider.
 type Provider struct {
-	Endpoint              string          `Description:"Mesos server endpoint. You can also specify multiple endpoint for Mesos"`
-	SSL                   bool            `Description:"Enable Endpoint SSL"`
-	Principal             string          `Description:"Principal to authorize agains Mesos Manager"`
-	Secret                string          `Description:"Secret authorize agains Mesos Manager"`
-	PollInterval          ptypes.Duration `Description:"Polling interval for endpoint." json:"pollInt"`
-	PollTimeout           ptypes.Duration `Description:"Polling timeout for endpoint." json:"pollTime"`
-	DefaultRule           string          `Description:"Default rule." json:"defaultRule,omitempty" toml:"defaultRule,omitempty" yaml:"defaultRule,omitempty"`
-	ForceUpdateInterval   time.Duration   `Description:"Interval to force an update."`
+	Endpoint              string        `Description:"Mesos server endpoint. You can also specify multiple endpoint for Mesos"`
+	SSL                   bool          `Description:"Enable Endpoint SSL"`
+	Principal             string        `Description:"Principal to authorize agains Mesos Manager"`
+	Secret                string        `Description:"Secret authorize agains Mesos Manager"`
+	PollInterval          time.Duration `Description:"Polling interval for endpoint." json:"pollInt"`
+	PollTimeout           time.Duration `Description:"Polling timeout for endpoint." json:"pollTime"`
+	DefaultRule           string        `Description:"Default rule." json:"defaultRule,omitempty" toml:"defaultRule,omitempty" yaml:"defaultRule,omitempty"`
+	ForceUpdateInterval   time.Duration `Description:"Interval to force an update."`
 	logger                log.Logger
 	mesosConfig           map[string]*MesosTasks
 	defaultRuleTpl        *template.Template
@@ -54,8 +53,8 @@ type Provider struct {
 func (p *Provider) SetDefaults() {
 	p.Endpoint = "127.0.0.1:5050"
 	p.SSL = false
-	p.PollInterval = ptypes.Duration(10 * time.Second)
-	p.PollTimeout = ptypes.Duration(10 * time.Second)
+	p.PollInterval = time.Duration(10 * time.Second)
+	p.PollTimeout = time.Duration(10 * time.Second)
 	p.DefaultRule = DefaultTemplateRule
 	p.ForceUpdateInterval = time.Duration(10 * time.Minute)
 	p.lastUpdate = time.Now()
@@ -113,7 +112,7 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 					hash := fnvHasher.Sum64()
 
 					if timeDiff >= p.ForceUpdateInterval.Minutes() {
-						p.logger.Info("Force Update Traefik Config")
+						p.logger.Infof("Force Update Traefik Config: %d", timeDiff)
 					} else {
 						if hash == p.lastConfigurationHash {
 							continue
