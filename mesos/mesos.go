@@ -76,8 +76,8 @@ func (p *Provider) Init() error {
 // using the given configuration channel.
 func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.Pool) error {
 	pool.GoCtx(func(routineCtx context.Context) {
-		ctx := log.With(context.Background(), log.Str(log.ProviderName, "mesos"))
-		p.logger = log.FromContext(ctx)
+		ctxLog := log.With(context.Background(), log.Str(log.ProviderName, "mesos"))
+		p.logger = log.FromContext(ctxLog)
 
 		// Add protocoll to the endpoint depends if SSL is enabled
 		protocol := "http://" + p.Endpoint
@@ -89,75 +89,27 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 		p.logger.Info("Connect Mesos Provider to: ", p.Endpoint)
 
 		operation := func() error {
+			ctx, cancel := context.WithCancel(ctxLog)
+			defer cancel()
+
+			// load initial configuration
+			if err := p.loadConfiguration(ctx, configurationChan); err != nil {
+				return fmt.Errorf("failed to refresh mesos tasks: %w", err)
+			}
+
 			ticker := time.NewTicker(time.Duration(p.PollInterval))
 			defer ticker.Stop()
 			for {
 				select {
-				case <-ticker.C:
-					tasks := p.getTasks()
-
-					// build hash to find out if the config changes
-					fnvHasher := fnv.New64()
-					tasksString, _ := json.Marshal(&tasks)
-					_, err := fnvHasher.Write(tasksString)
-
-					if err != nil {
-						p.logger.Errorf("cannot hash mesos tasks data: ", err.Error())
-						continue
-					}
-
-					// check if the configuration has changed or the last update is 10 minutes ago
-					timeNow := time.Now()
-					timeDiff := timeNow.Sub(p.lastUpdate).Minutes()
-					hash := fnvHasher.Sum64()
-
-					if timeDiff >= p.ForceUpdateInterval.Minutes() {
-						p.logger.Infof("Force Update Traefik Config: %d", timeDiff)
-					} else {
-						if hash == p.lastConfigurationHash {
-							continue
-						}
-					}
-
-					p.lastUpdate = timeNow
-					p.lastConfigurationHash = hash
-					p.logger.Info("Update Traefik Config")
-
-					// collect all mesos tasks and combine the belong one.
-					for _, task := range tasks.Tasks {
-						if task.State == "TASK_RUNNING" {
-							if task.Labels != nil {
-								if p.checkTraefikLabels(task) {
-									if p.checkContainer(task) {
-										containerName := task.ID
-										if p.mesosConfig[containerName] == nil {
-											p.mesosConfig[containerName] = &MesosTasks{}
-										}
-										p.mesosConfig[containerName].Tasks = append(p.mesosConfig[containerName].Tasks, task)
-									}
-								}
-							}
-						}
-					}
-
-					// build the treafik configuration
-					if len(p.mesosConfig) > 0 {
-						configuration := p.buildConfiguration(ctx)
-						if configuration != nil {
-							configurationChan <- dynamic.Message{
-								ProviderName:  "mesos",
-								Configuration: configuration,
-							}
-						}
-					}
-
-					// cleanup old data
-					p.mesosConfig = make(map[string]*MesosTasks)
 				case <-routineCtx.Done():
 					return nil
+				case <-ticker.C:
 				}
+				if err := p.loadConfiguration(ctx, configurationChan); err != nil {
+					return fmt.Errorf("failed to refresh mesos tasks: %w", err)
+				}
+
 			}
-			return nil
 		}
 		notify := func(err error, time time.Duration) {
 			p.logger.Errorf("Provider connection error %+v, retrying in %s", err, time)
@@ -168,6 +120,71 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 			p.logger.Errorf("Cannot connect to Provider server: %+v", err)
 		}
 	})
+	return nil
+}
+
+func (p *Provider) loadConfiguration(ctx context.Context, configurationChan chan<- dynamic.Message) error {
+	tasks := p.getTasks()
+
+	// build hash to find out if the config changes
+	fnvHasher := fnv.New64()
+	tasksString, _ := json.Marshal(&tasks)
+	_, err := fnvHasher.Write(tasksString)
+
+	if err != nil {
+		p.logger.Errorf("cannot hash mesos tasks data: ", err.Error())
+		return err
+	}
+
+	// check if the configuration has changed or the last update is 10 minutes ago
+	timeNow := time.Now()
+	timeDiff := timeNow.Sub(p.lastUpdate).Minutes()
+	hash := fnvHasher.Sum64()
+
+	if timeDiff >= p.ForceUpdateInterval.Minutes() {
+		p.logger.Infof("Force Update Traefik Config", timeDiff)
+	} else {
+		if hash == p.lastConfigurationHash {
+			return err
+		}
+	}
+
+	p.lastUpdate = timeNow
+	p.lastConfigurationHash = hash
+	p.logger.Info("Update Traefik Config")
+	p.mesosConfig = make(map[string]*MesosTasks)
+
+	// collect all mesos tasks and combine the belong one.
+	for _, task := range tasks.Tasks {
+		if task.State == "TASK_RUNNING" {
+			if task.Labels != nil {
+				if p.checkTraefikLabels(task) {
+					if p.checkContainer(task) {
+						containerName := task.ID
+						if p.mesosConfig[containerName] == nil {
+							p.mesosConfig[containerName] = &MesosTasks{}
+						}
+						p.mesosConfig[containerName].Tasks = append(p.mesosConfig[containerName].Tasks, task)
+					}
+				}
+			}
+		}
+	}
+
+	// build the treafik configuration
+	if len(p.mesosConfig) > 0 {
+		configuration := p.buildConfiguration(ctx)
+		if configuration != nil {
+			configurationChan <- dynamic.Message{
+				ProviderName:  "mesos",
+				Configuration: configuration,
+			}
+		}
+	}
+
+	// cleanup old data
+	p.mesosConfig = make(map[string]*MesosTasks)
+
 	return nil
 }
 
@@ -202,7 +219,7 @@ func (p *Provider) getTasks() MesosTasks {
 		return MesosTasks{}
 	}
 
-	p.logger.Info("Get Data from Mesos")
+	p.logger.Debug("Get Data from Mesos")
 
 	var tasks MesosTasks
 	err = json.NewDecoder(res.Body).Decode(&tasks)

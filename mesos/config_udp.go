@@ -14,8 +14,19 @@ func (p *Provider) buildUDPServiceConfiguration(ctx context.Context, containerNa
 	if len(configuration.Routers) == 0 {
 		return
 	}
+
+	var lb *dynamic.UDPServersLoadBalancer
 	if len(configuration.Services) == 0 {
 		configuration.Services = make(map[string]*dynamic.UDPService)
+		lb = new(dynamic.UDPServersLoadBalancer)
+	}
+	// if there is no service configures, create one
+	for _, service := range configuration.Services {
+		if service.LoadBalancer == nil {
+			lb = new(dynamic.UDPServersLoadBalancer)
+		} else {
+			lb = service.LoadBalancer
+		}
 	}
 
 	for _, service := range configuration.Routers {
@@ -29,7 +40,13 @@ func (p *Provider) buildUDPServiceConfiguration(ctx context.Context, containerNa
 				if port.Name != service.Service {
 					continue
 				}
-				lb := &dynamic.UDPServersLoadBalancer{}
+
+				if len(lb.Servers) == 0 {
+					server := dynamic.UDPServer{}
+
+					lb.Servers = []dynamic.UDPServer{server}
+				}
+
 				lb.Servers = p.getUDPServers(port.Name, containerName)
 
 				lbService := &dynamic.UDPService{

@@ -36,6 +36,9 @@ func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuratio
 				continue
 			}
 
+			//res2B, _ := json.Marshal(confFromLabel)
+			//fmt.Println(string(res2B))
+
 			p.buildTCPServiceConfiguration(ctx, containerName, confFromLabel.TCP)
 			provider.BuildTCPRouterConfiguration(ctx, confFromLabel.TCP)
 
@@ -52,6 +55,9 @@ func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuratio
 				Labels: labels,
 			}
 			provider.BuildRouterConfiguration(ctx, confFromLabel.HTTP, containerName, p.defaultRuleTpl, model)
+
+			//res2B, _ = json.Marshal(confFromLabel)
+			//fmt.Println(string(res2B))
 
 			configurations[containerName] = confFromLabel
 		}

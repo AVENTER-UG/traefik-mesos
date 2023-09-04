@@ -14,8 +14,22 @@ func (p *Provider) buildTCPServiceConfiguration(ctx context.Context, containerNa
 	if len(configuration.Routers) == 0 {
 		return
 	}
+
+	var lb *dynamic.TCPServersLoadBalancer
 	if len(configuration.Services) == 0 {
 		configuration.Services = make(map[string]*dynamic.TCPService)
+		lb = new(dynamic.TCPServersLoadBalancer)
+		lb.SetDefaults()
+	}
+
+	// if there is no service configures, create one
+	for _, service := range configuration.Services {
+		if service.LoadBalancer == nil {
+			lb = new(dynamic.TCPServersLoadBalancer)
+			lb.SetDefaults()
+		} else {
+			lb = service.LoadBalancer
+		}
 	}
 
 	for _, service := range configuration.Routers {
@@ -29,8 +43,13 @@ func (p *Provider) buildTCPServiceConfiguration(ctx context.Context, containerNa
 				if port.Name != service.Service {
 					continue
 				}
-				lb := &dynamic.TCPServersLoadBalancer{}
-				lb.SetDefaults()
+
+				if len(lb.Servers) == 0 {
+					server := dynamic.TCPServer{}
+
+					lb.Servers = []dynamic.TCPServer{server}
+				}
+
 				lb.Servers = p.getTCPServers(port.Name, containerName)
 
 				lbService := &dynamic.TCPService{

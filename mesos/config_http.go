@@ -15,8 +15,22 @@ func (p *Provider) buildHTTPServiceConfiguration(ctx context.Context, containerN
 	if len(configuration.Routers) == 0 {
 		return
 	}
+
+	// if there is no service configures, create one
+	var lb *dynamic.ServersLoadBalancer
 	if len(configuration.Services) == 0 {
 		configuration.Services = make(map[string]*dynamic.Service)
+		lb = new(dynamic.ServersLoadBalancer)
+		lb.SetDefaults()
+	}
+
+	for _, service := range configuration.Services {
+		if service.LoadBalancer == nil {
+			lb = new(dynamic.ServersLoadBalancer)
+			lb.SetDefaults()
+		} else {
+			lb = service.LoadBalancer
+		}
 	}
 
 	for _, service := range configuration.Routers {
@@ -30,16 +44,19 @@ func (p *Provider) buildHTTPServiceConfiguration(ctx context.Context, containerN
 				if port.Name != service.Service {
 					continue
 				}
-				lb := &dynamic.ServersLoadBalancer{}
-				lb.SetDefaults()
+
+				if len(lb.Servers) == 0 {
+					server := dynamic.Server{}
+					server.SetDefaults()
+
+					lb.Servers = []dynamic.Server{server}
+				}
+
 				lb.Servers = p.getHTTPServers(port.Name, containerName)
 
 				lbService := &dynamic.Service{
 					LoadBalancer: lb,
 				}
-				//				res2B, _ := json.Marshal(lbService)
-				//				fmt.Println(string(res2B))
-
 				configuration.Services[service.Service] = lbService
 			}
 		}
