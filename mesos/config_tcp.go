@@ -15,21 +15,8 @@ func (p *Provider) buildTCPServiceConfiguration(ctx context.Context, containerNa
 		return
 	}
 
-	var lb *dynamic.TCPServersLoadBalancer
 	if len(configuration.Services) == 0 {
 		configuration.Services = make(map[string]*dynamic.TCPService)
-		lb = new(dynamic.TCPServersLoadBalancer)
-		lb.SetDefaults()
-	}
-
-	// if there is no service configures, create one
-	for _, service := range configuration.Services {
-		if service.LoadBalancer == nil {
-			lb = new(dynamic.TCPServersLoadBalancer)
-			lb.SetDefaults()
-		} else {
-			lb = service.LoadBalancer
-		}
 	}
 
 	for _, service := range configuration.Routers {
@@ -44,13 +31,29 @@ func (p *Provider) buildTCPServiceConfiguration(ctx context.Context, containerNa
 					continue
 				}
 
+				var lb *dynamic.TCPServersLoadBalancer
+				if configuration.Services[service.Service] == nil {
+					configuration.Services[service.Service] = &dynamic.TCPService{}
+				}
+				if configuration.Services[service.Service].LoadBalancer == nil {
+					lb = new(dynamic.TCPServersLoadBalancer)
+					lb.SetDefaults()
+				} else {
+					lb = configuration.Services[service.Service].LoadBalancer
+				}
+
+				if len(lb.Servers) == 0 {
+					server := dynamic.TCPServer{}
+					lb.Servers = []dynamic.TCPServer{server}
+				}
+
 				if len(lb.Servers) == 0 {
 					server := dynamic.TCPServer{}
 
 					lb.Servers = []dynamic.TCPServer{server}
 				}
 
-				lb.Servers = p.getTCPServers(port.Name, containerName)
+				lb.Servers = p.getTCPServers(port.Name, containerName, lb)
 
 				lbService := &dynamic.TCPService{
 					LoadBalancer: lb,
@@ -64,7 +67,7 @@ func (p *Provider) buildTCPServiceConfiguration(ctx context.Context, containerNa
 
 // getTCPServers search all IP addresses to the given portName of
 // the Mesos Task with the containerName.
-func (p *Provider) getTCPServers(portName string, containerName string) []dynamic.TCPServer {
+func (p *Provider) getTCPServers(portName string, containerName string, lb *dynamic.TCPServersLoadBalancer) []dynamic.TCPServer {
 	var servers []dynamic.TCPServer
 	for _, task := range p.mesosConfig[containerName].Tasks {
 		for _, status := range task.Statuses {
@@ -78,6 +81,11 @@ func (p *Provider) getTCPServers(portName string, containerName string) []dynami
 									continue
 								}
 								po := strconv.Itoa(port.Number)
+
+								if lb.Servers[0].Port != "" {
+									po = lb.Servers[0].Port
+								}
+
 								server := dynamic.TCPServer{
 									Address: net.JoinHostPort(ip.IPAddress, po),
 									Port:    po,

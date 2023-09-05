@@ -23,8 +23,6 @@ func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuratio
 
 		if task.Labels != nil {
 			containerName := task.ID
-			//	res2B, _ := json.Marshal(containerName)
-			//fmt.Println(string(res2B))
 			for _, label := range task.Labels {
 				key := strings.ReplaceAll(label.Key, "__mesos_taskid__", strings.ReplaceAll(task.ID, ".", "_"))
 				value := strings.ReplaceAll(label.Value, "__mesos_taskid__", strings.ReplaceAll(task.ID, ".", "_"))
@@ -35,10 +33,6 @@ func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuratio
 				p.logger.Warnf("Ignore Error in DecodeConfiguration (%s): %s", task.Name, err.Error())
 				continue
 			}
-
-			//res2B, _ := json.Marshal(confFromLabel)
-			//fmt.Println(string(res2B))
-
 			p.buildTCPServiceConfiguration(ctx, containerName, confFromLabel.TCP)
 			provider.BuildTCPRouterConfiguration(ctx, confFromLabel.TCP)
 

@@ -15,18 +15,8 @@ func (p *Provider) buildUDPServiceConfiguration(ctx context.Context, containerNa
 		return
 	}
 
-	var lb *dynamic.UDPServersLoadBalancer
 	if len(configuration.Services) == 0 {
 		configuration.Services = make(map[string]*dynamic.UDPService)
-		lb = new(dynamic.UDPServersLoadBalancer)
-	}
-	// if there is no service configures, create one
-	for _, service := range configuration.Services {
-		if service.LoadBalancer == nil {
-			lb = new(dynamic.UDPServersLoadBalancer)
-		} else {
-			lb = service.LoadBalancer
-		}
 	}
 
 	for _, service := range configuration.Routers {
@@ -41,13 +31,28 @@ func (p *Provider) buildUDPServiceConfiguration(ctx context.Context, containerNa
 					continue
 				}
 
+				var lb *dynamic.UDPServersLoadBalancer
+				if configuration.Services[service.Service] == nil {
+					configuration.Services[service.Service] = &dynamic.UDPService{}
+				}
+				if configuration.Services[service.Service].LoadBalancer == nil {
+					lb = new(dynamic.UDPServersLoadBalancer)
+				} else {
+					lb = configuration.Services[service.Service].LoadBalancer
+				}
+
+				if len(lb.Servers) == 0 {
+					server := dynamic.UDPServer{}
+					lb.Servers = []dynamic.UDPServer{server}
+				}
+
 				if len(lb.Servers) == 0 {
 					server := dynamic.UDPServer{}
 
 					lb.Servers = []dynamic.UDPServer{server}
 				}
 
-				lb.Servers = p.getUDPServers(port.Name, containerName)
+				lb.Servers = p.getUDPServers(port.Name, containerName, lb)
 
 				lbService := &dynamic.UDPService{
 					LoadBalancer: lb,
@@ -61,7 +66,7 @@ func (p *Provider) buildUDPServiceConfiguration(ctx context.Context, containerNa
 
 // getUDPServers search all IP addresses to the given portName of
 // the Mesos Task with the containerName.
-func (p *Provider) getUDPServers(portName string, containerName string) []dynamic.UDPServer {
+func (p *Provider) getUDPServers(portName string, containerName string, lb *dynamic.UDPServersLoadBalancer) []dynamic.UDPServer {
 	var servers []dynamic.UDPServer
 	for _, task := range p.mesosConfig[containerName].Tasks {
 		for _, status := range task.Statuses {
@@ -75,6 +80,11 @@ func (p *Provider) getUDPServers(portName string, containerName string) []dynami
 									continue
 								}
 								po := strconv.Itoa(port.Number)
+
+								if lb.Servers[0].Port != "" {
+									po = lb.Servers[0].Port
+								}
+
 								server := dynamic.UDPServer{
 									Address: net.JoinHostPort(ip.IPAddress, po),
 									Port:    po,

@@ -17,20 +17,8 @@ func (p *Provider) buildHTTPServiceConfiguration(ctx context.Context, containerN
 	}
 
 	// if there is no service configures, create one
-	var lb *dynamic.ServersLoadBalancer
 	if len(configuration.Services) == 0 {
 		configuration.Services = make(map[string]*dynamic.Service)
-		lb = new(dynamic.ServersLoadBalancer)
-		lb.SetDefaults()
-	}
-
-	for _, service := range configuration.Services {
-		if service.LoadBalancer == nil {
-			lb = new(dynamic.ServersLoadBalancer)
-			lb.SetDefaults()
-		} else {
-			lb = service.LoadBalancer
-		}
 	}
 
 	for _, service := range configuration.Routers {
@@ -45,14 +33,24 @@ func (p *Provider) buildHTTPServiceConfiguration(ctx context.Context, containerN
 					continue
 				}
 
-				if len(lb.Servers) == 0 {
+				var lb *dynamic.ServersLoadBalancer
+				if configuration.Services[service.Service] == nil {
+					configuration.Services[service.Service] = &dynamic.Service{}
+				}
+				if configuration.Services[service.Service].LoadBalancer == nil {
+					lb = new(dynamic.ServersLoadBalancer)
+					lb.SetDefaults()
+				} else {
+					lb = configuration.Services[service.Service].LoadBalancer
+				}
+
+				if lb.Servers == nil {
 					server := dynamic.Server{}
 					server.SetDefaults()
-
 					lb.Servers = []dynamic.Server{server}
 				}
 
-				lb.Servers = p.getHTTPServers(port.Name, containerName)
+				lb.Servers = p.getHTTPServers(service.Service, containerName, lb)
 
 				lbService := &dynamic.Service{
 					LoadBalancer: lb,
@@ -61,11 +59,13 @@ func (p *Provider) buildHTTPServiceConfiguration(ctx context.Context, containerN
 			}
 		}
 	}
+	//res2B, _ := json.Marshal(configuration)
+	//fmt.Println(string(res2B))
 }
 
 // getHTTPServers search all IP addresses to the given portName of
 // the Mesos Task with the containerName.
-func (p *Provider) getHTTPServers(portName string, containerName string) []dynamic.Server {
+func (p *Provider) getHTTPServers(portName string, containerName string, lb *dynamic.ServersLoadBalancer) []dynamic.Server {
 	var servers []dynamic.Server
 	for _, task := range p.mesosConfig[containerName].Tasks {
 		for _, status := range task.Statuses {
@@ -92,6 +92,15 @@ func (p *Provider) getHTTPServers(portName string, containerName string) []dynam
 								if port.Protocol == "https" {
 									protocol = "https"
 								}
+
+								if lb.Servers[0].Scheme != "" {
+									protocol = lb.Servers[0].Scheme
+								}
+
+								if lb.Servers[0].Port != "" {
+									po = lb.Servers[0].Port
+								}
+
 								server := dynamic.Server{
 									URL: fmt.Sprintf("%s://%s", protocol, net.JoinHostPort(ip.IPAddress, po)),
 								}
