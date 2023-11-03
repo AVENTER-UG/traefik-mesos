@@ -26,6 +26,8 @@ func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuratio
 			for _, label := range task.Labels {
 				key := strings.ReplaceAll(label.Key, "__mesos_taskid__", strings.ReplaceAll(task.ID, ".", "_"))
 				value := strings.ReplaceAll(label.Value, "__mesos_taskid__", strings.ReplaceAll(task.ID, ".", "_"))
+				key = strings.ReplaceAll(label.Key, "__mesos_portname__", p.getPortname(containerName))
+				value = strings.ReplaceAll(label.Value, "__mesos_portname__", p.getPortname(containerName))
 				labels[key] = value
 			}
 			confFromLabel, err := label.DecodeConfiguration(labels)
@@ -58,4 +60,23 @@ func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuratio
 	}
 
 	return provider.Merge(ctx, configurations)
+}
+
+// getPortname get the discovery portname
+// the Mesos Task with the containerName.
+func (p *Provider) getPortname(containerName string) string {
+	for _, task := range p.mesosConfig[containerName].Tasks {
+		for _, status := range task.Statuses {
+			// the host ip is only visible during starting task. Have to find out why
+			if status.State == "TASK_STARTING" {
+				for _, network := range status.ContainerStatus.NetworkInfos {
+					for _, ip := range network.IPAddresses {
+						if ip.Protocol == "IPv4" && len(task.Discovery.Ports.Ports) > 0 {
+							return task.Discovery.Ports.Ports[0].Name
+						}
+					}
+				}
+			}
+		}
+	}
 }
