@@ -26,8 +26,13 @@ func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuratio
 			for _, label := range task.Labels {
 				key := strings.ReplaceAll(label.Key, "__mesos_taskid__", strings.ReplaceAll(task.ID, ".", "_"))
 				value := strings.ReplaceAll(label.Value, "__mesos_taskid__", strings.ReplaceAll(task.ID, ".", "_"))
-				key = strings.ReplaceAll(label.Key, "__mesos_portname__", p.getPortname(containerName))
-				value = strings.ReplaceAll(label.Value, "__mesos_portname__", p.getPortname(containerName))
+
+				portName := p.getPortname(containerName)
+				if portName != "" {
+					key = strings.ReplaceAll(label.Key, "__mesos_portname__", p.getPortname(containerName))
+					value = strings.ReplaceAll(label.Value, "__mesos_portname__", p.getPortname(containerName))
+				}
+
 				labels[key] = value
 			}
 			confFromLabel, err := label.DecodeConfiguration(labels)
@@ -79,4 +84,6 @@ func (p *Provider) getPortname(containerName string) string {
 			}
 		}
 	}
+
+	return ""
 }
