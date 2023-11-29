@@ -108,7 +108,6 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 				if err := p.loadConfiguration(ctx, configurationChan); err != nil {
 					return fmt.Errorf("failed to refresh mesos tasks: %w", err)
 				}
-
 			}
 		}
 		notify := func(err error, time time.Duration) {
@@ -145,7 +144,8 @@ func (p *Provider) loadConfiguration(ctx context.Context, configurationChan chan
 		p.logger.Infof("Force Update Traefik Config", timeDiff)
 	} else {
 		if hash == p.lastConfigurationHash {
-			return err
+			p.logger.Debug("nothing to update.")
+			return nil
 		}
 	}
 

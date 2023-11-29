@@ -73,6 +73,7 @@ As example:
 ### Dynamic Names
 
 All "__mesos_taskid__" strings in the labels (key and value) will be replaced by the unique Mesos TaskID.
+All "__mesos_portname__" string in the labels (key and value) will be replace by the service name (without portnumber).
 
 ## Doku and links to the official traefik
 
