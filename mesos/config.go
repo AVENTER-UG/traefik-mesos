@@ -29,8 +29,8 @@ func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuratio
 
 				portName := p.getPortname(containerName)
 				if portName != "" {
-					key = strings.ReplaceAll(label.Key, "__mesos_portname__", p.getPortname(containerName))
-					value = strings.ReplaceAll(label.Value, "__mesos_portname__", p.getPortname(containerName))
+					key = strings.ReplaceAll(key, "__mesos_portname__", p.getPortname(containerName))
+					value = strings.ReplaceAll(value, "__mesos_portname__", p.getPortname(containerName))
 				}
 
 				labels[key] = value
