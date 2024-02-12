@@ -2,7 +2,7 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v2.10.6
+TAG=v2.11.0
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 IMAGEFULLNAME=avhost/${IMAGENAME}
 BUILDDATE=`date -u +%Y-%m-%d`
@@ -33,20 +33,25 @@ else
         BRANCH=latest
 endif
 
-build: 
-	@echo ">>>> Build traefik executable ${BUILD_VERSION}"
+clone: 
 	@if [ ! -d "traefik_repo" ] ; then \
 		git clone https://github.com/traefik/traefik.git traefik_repo; \
 	fi
 	cd traefik_repo;	git checkout $(TAG)
+
+patch:	
 	patch -u traefik_repo/pkg/config/static/static_config.go -i static_config.patch
 	patch -u traefik_repo/pkg/provider/aggregator/aggregator.go -i aggregator.patch
 	cp -pr mesos traefik_repo/pkg/provider/
-	@cd traefik_repo; go get -d
+
+build: 
+	@echo ">>>> Build traefik executable ${BUILD_VERSION}"
+	cp -pr mesos traefik_repo/pkg/provider/
+	@cd traefik_repo; go get -d 
 	@cd traefik_repo; go get github.com/mesos/mesos-go/api/v0/detector/zoo
 	@cd traefik_repo; go mod tidy
 	cd traefik_repo; $(MAKE) generate-webui
-	cp static/mesos.svg traefik_repo/webui/static/statics/providers/
+	cp static/mesos.svg traefik_repo/webui/static/providers/
 	export VERSION=${BUILD_VERSION}; cd traefik_repo; $(MAKE)
 
 build-docker: build
@@ -66,4 +71,4 @@ clean:
 
 
 
-all: build-docker clean
+all: clone patch build-docker clean

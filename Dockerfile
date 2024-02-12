@@ -1,6 +1,8 @@
 FROM alpine:latest
 
-ADD traefik_repo/dist/traefik /traefik
+ENV ARCH amd64
+
+ADD traefik_repo/dist/linux/${ARCH}/traefik /traefik
 ADD entrypoint.sh /entrypoint.sh
 
 RUN apk update

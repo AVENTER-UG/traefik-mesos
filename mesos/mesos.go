@@ -151,7 +151,6 @@ func (p *Provider) loadConfiguration(ctx context.Context, configurationChan chan
 
 	p.lastUpdate = timeNow
 	p.lastConfigurationHash = hash
-	p.logger.Info("Update Traefik Config")
 	p.mesosConfig = make(map[string]*MesosTasks)
 
 	// collect all mesos tasks and combine the belong one.
@@ -175,10 +174,13 @@ func (p *Provider) loadConfiguration(ctx context.Context, configurationChan chan
 	if len(p.mesosConfig) > 0 {
 		configuration := p.buildConfiguration(ctx)
 		if configuration != nil {
+			p.logger.Info("Update Traefik Config")
 			configurationChan <- dynamic.Message{
 				ProviderName:  "mesos",
 				Configuration: configuration,
 			}
+		} else {
+			p.logger.Error("Build traefik config error")
 		}
 	}
 
