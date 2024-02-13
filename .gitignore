@@ -1,2 +1,5 @@
 traefik_repo/**
 traefik_repo              
+nohup.out
+traefik
+traefik.toml
