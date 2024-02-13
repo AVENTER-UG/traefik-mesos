@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/traefik/traefik/v2/pkg/config/dynamic"
-	"github.com/traefik/traefik/v2/pkg/config/label"
-	"github.com/traefik/traefik/v2/pkg/provider"
+	"github.com/traefik/traefik/v3/pkg/config/dynamic"
+	"github.com/traefik/traefik/v3/pkg/config/label"
+	"github.com/traefik/traefik/v3/pkg/provider"
 )
 
 func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuration {
@@ -37,7 +37,7 @@ func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuratio
 			}
 			confFromLabel, err := label.DecodeConfiguration(labels)
 			if err != nil {
-				p.logger.Warnf("Ignore Error in DecodeConfiguration (%s): %s", task.Name, err.Error())
+				p.logger.Warn().Msgf("Ignore Error in DecodeConfiguration (%s): %s", task.Name, err.Error())
 				continue
 			}
 			p.buildTCPServiceConfiguration(ctx, containerName, confFromLabel.TCP)

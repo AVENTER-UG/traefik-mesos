@@ -5,7 +5,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/traefik/traefik/v2/pkg/config/dynamic"
+	"github.com/traefik/traefik/v3/pkg/config/dynamic"
 )
 
 // buildTCPServiceConfiguration buid the TCP Service of the Mesos Taks
@@ -37,7 +37,6 @@ func (p *Provider) buildTCPServiceConfiguration(ctx context.Context, containerNa
 				}
 				if configuration.Services[service.Service].LoadBalancer == nil {
 					lb = new(dynamic.TCPServersLoadBalancer)
-					lb.SetDefaults()
 				} else {
 					lb = configuration.Services[service.Service].LoadBalancer
 				}

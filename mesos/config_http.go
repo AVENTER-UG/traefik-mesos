@@ -6,7 +6,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/traefik/traefik/v2/pkg/config/dynamic"
+	"github.com/traefik/traefik/v3/pkg/config/dynamic"
 )
 
 // buildHTTPServiceConfiguration buid th HTTP Service of the Mesos Taks
