@@ -71,4 +71,4 @@ clean:
 
 
 
-all: clone patch build-docker clean
+all: clone patch build-docker
