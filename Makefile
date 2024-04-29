@@ -2,7 +2,7 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v3.0.0-rc2
+TAG=v3.0.0
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 IMAGEFULLNAME=avhost/${IMAGENAME}
 BUILDDATE=`date -u +%Y-%m-%d`
@@ -58,7 +58,7 @@ build-docker: build
 	@echo ">>>> Build docker image" ${BRANCH}
 	docker build -t ${IMAGEFULLNAME}:latest . 
 
-push:
+push: build
 	@echo ">>>> Publish it to repo" ${BRANCH}
 	docker buildx create --use --name buildkit
 	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH} .
