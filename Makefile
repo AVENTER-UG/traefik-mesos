@@ -39,7 +39,7 @@ clone:
 	fi
 	cd traefik_repo;	git checkout $(TAG)
 
-patch:	
+patch:
 	patch -u traefik_repo/pkg/config/static/static_config.go -i static_config.patch
 	patch -u traefik_repo/pkg/provider/aggregator/aggregator.go -i aggregator.patch
 	cp -pr mesos traefik_repo/pkg/provider/
@@ -58,7 +58,7 @@ build-docker: build
 	@echo ">>>> Build docker image" ${BRANCH}
 	docker build -t ${IMAGEFULLNAME}:latest . 
 
-push:
+push: build
 	@echo ">>>> Publish it to repo" ${BRANCH}
 	docker buildx create --use --name buildkit
 	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH} .
@@ -68,7 +68,6 @@ push:
 
 clean:
 	rm -rf traefik_repo
-
 
 
 all: clone patch build-docker clean
