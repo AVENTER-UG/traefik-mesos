@@ -5,7 +5,7 @@ IMAGENAME=traefik_mesos
 TAG=v2.11.1
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 IMAGEFULLNAME=avhost/${IMAGENAME}
-BUILDDATE=`date -u +%Y-%m-%d`
+BUILDDATE=`date -u +%Y%m%d`
 VERSION_TU=$(subst -, ,$(TAG:v%=%))	
 BUILD_VERSION=$(word 1,$(VERSION_TU))
 LASTCOMMIT=$(shell git log -1 --pretty=short | tail -n 1 | tr -d " " | tr -d "UPDATE:")
@@ -62,7 +62,7 @@ push: build
 	@echo ">>>> Publish it to repo" ${BRANCH}
 	docker buildx create --use --name buildkit
 	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH} .
-	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH}-${BUILDDATE} .
+	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH}_${BUILDDATE} .
 	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:latest .
 	docker buildx rm buildkit
 
