@@ -5,7 +5,7 @@ IMAGENAME=traefik_mesos
 TAG=v3.0.0
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 IMAGEFULLNAME=avhost/${IMAGENAME}
-BUILDDATE=`date -u +%Y-%m-%d`
+BUILDDATE=`date -u +%Y%m%d`
 VERSION_TU=$(subst -, ,$(TAG:v%=%))	
 BUILD_VERSION=$(word 1,$(VERSION_TU))
 LASTCOMMIT=$(shell git log -1 --pretty=short | tail -n 1 | tr -d " " | tr -d "UPDATE:")
