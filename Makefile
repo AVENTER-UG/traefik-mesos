@@ -2,7 +2,7 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v2.11.1
+TAG=v2.11.3
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 IMAGEFULLNAME=avhost/${IMAGENAME}
 BUILDDATE=$(shell date -u +%Y%m%d)
@@ -61,13 +61,13 @@ build-docker: build
 push: build
 	@echo ">>>> Publish it to repo" ${BRANCH}_${BUILDDATE}
 	docker buildx create --use --name buildkit
-	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH}_${BUILDDATE} .
-	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH} .
-	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:latest .
+	docker buildx build --sbom=true --provenance=true --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH}_${BUILDDATE} .
+	docker buildx build --sbom=true --provenance=true --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH} .
+	docker buildx build --sbom=true --provenance=true --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:latest .
 	docker buildx rm buildkit
 
 clean:
 	rm -rf traefik_repo
 
 
-all: clone patch build-docker clean
+all: clone patch build-docker 
