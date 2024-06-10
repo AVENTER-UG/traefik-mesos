@@ -2,8 +2,9 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v3.0.0
-BRANCH=`git rev-parse --abbrev-ref HEAD`
+TAG=v3.0.1
+BRANCH=$(shell git symbolic-ref --short HEAD | xargs basename)
+BRANCHSHORT=$(shell echo ${BRANCH} | awk -F. '{ print $$1"."$$2 }')
 IMAGEFULLNAME=avhost/${IMAGENAME}
 BUILDDATE=$(shell date -u +%Y%m%d)
 VERSION_TU=$(subst -, ,$(TAG:v%=%))	
@@ -25,12 +26,7 @@ help:
 
 ifeq (${BRANCH}, master) 
         BRANCH=latest
-endif
-
-ifneq ($(shell echo $(LASTCOMMIT) | grep -E '^v|([0-9]+\.){0,2}(\*|[0-9]+)'),)
-        BRANCH=${LASTCOMMIT}
-else
-        BRANCH=latest
+        BRANCHSHORT=latest
 endif
 
 clone: 
@@ -61,8 +57,8 @@ build-docker: build
 push: build
 	@echo ">>>> Publish it to repo" ${BRANCH}_${BUILDDATE}
 	docker buildx create --use --name buildkit
-	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH}_${BUILDDATE} .
 	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH} .
+	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCHSHORT} .
 	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:latest .
 	docker buildx rm buildkit
 
