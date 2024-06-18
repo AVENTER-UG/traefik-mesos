@@ -2,9 +2,9 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v2.11.3
-BRANCH=`git rev-parse --abbrev-ref HEAD`
-BRANCHSHORT=$(shell echo ${BRANCH} | awk -F. '{ print $1"."$2 }')
+TAG=v2.11.4
+BRANCH=$(shell git symbolic-ref --short HEAD | xargs basename)
+BRANCHSHORT=$(shell echo ${BRANCH} | awk -F. '{ print $$1"."$$2 }')
 IMAGEFULLNAME=avhost/${IMAGENAME}
 BUILDDATE=$(shell date -u +%Y%m%d)
 VERSION_TU=$(subst -, ,$(TAG:v%=%))	
