@@ -2,7 +2,7 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v3.0.4
+TAG=v3.1.0
 BRANCH=$(shell git symbolic-ref --short HEAD | xargs basename)
 BRANCHSHORT=$(shell echo ${BRANCH} | awk -F. '{ print $$1"."$$2 }')
 IMAGEFULLNAME=avhost/${IMAGENAME}
@@ -55,7 +55,7 @@ build-docker: build
 	docker build -t ${IMAGEFULLNAME}:latest . 
 
 push: build
-	@echo ">>>> Publish it to repo" ${BRANCH}_${BUILDDATE}
+	@echo ">>>> Publish it to repo" ${BRANCH}
 	docker buildx create --use --name buildkit
 	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH} .
 	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCHSHORT} .
