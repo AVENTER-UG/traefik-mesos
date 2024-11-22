@@ -14,11 +14,13 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/traefik/traefik/v2/pkg/config/dynamic"
-	"github.com/traefik/traefik/v2/pkg/job"
-	"github.com/traefik/traefik/v2/pkg/log"
-	"github.com/traefik/traefik/v2/pkg/provider"
-	"github.com/traefik/traefik/v2/pkg/safe"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/traefik/traefik/v3/pkg/config/dynamic"
+	"github.com/traefik/traefik/v3/pkg/job"
+	"github.com/traefik/traefik/v3/pkg/logs"
+	"github.com/traefik/traefik/v3/pkg/provider"
+	"github.com/traefik/traefik/v3/pkg/safe"
 
 	// Register mesos zoo the detector
 
@@ -42,7 +44,7 @@ type Provider struct {
 	PollTimeout           time.Duration `Description:"Polling timeout for endpoint." json:"pollTime"`
 	DefaultRule           string        `Description:"Default rule." json:"defaultRule,omitempty" toml:"defaultRule,omitempty" yaml:"defaultRule,omitempty"`
 	ForceUpdateInterval   time.Duration `Description:"Interval to force an update."`
-	logger                log.Logger
+	logger                zerolog.Logger
 	mesosConfig           map[string]*MesosTasks
 	defaultRuleTpl        *template.Template
 	lastConfigurationHash uint64
@@ -76,8 +78,8 @@ func (p *Provider) Init() error {
 // using the given configuration channel.
 func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.Pool) error {
 	pool.GoCtx(func(routineCtx context.Context) {
-		ctxLog := log.With(context.Background(), log.Str(log.ProviderName, "mesos"))
-		p.logger = log.FromContext(ctxLog)
+		p.logger = log.Ctx(routineCtx).With().Str(logs.ProviderName, "mesos").Logger()
+		ctxLog := p.logger.WithContext(routineCtx)
 
 		// Add protocoll to the endpoint depends if SSL is enabled
 		protocol := "http://" + p.Endpoint
@@ -86,7 +88,7 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 		}
 		p.Endpoint = protocol
 
-		p.logger.Info("Connect Mesos Provider to: ", p.Endpoint)
+		p.logger.Info().Msgf("Connect Mesos Provider to: ", p.Endpoint)
 
 		operation := func() error {
 			ctx, cancel := context.WithCancel(ctxLog)
@@ -111,12 +113,12 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 			}
 		}
 		notify := func(err error, time time.Duration) {
-			p.logger.Errorf("Provider connection error %+v, retrying in %s", err, time)
+			p.logger.Error().Msgf("Provider connection error %+v, retrying in %s", err, time)
 		}
 
 		err := backoff.RetryNotify(safe.OperationWithRecover(operation), job.NewBackOff(backoff.NewExponentialBackOff()), notify)
 		if err != nil {
-			p.logger.Errorf("Cannot connect to Provider server: %+v", err)
+			p.logger.Error().Msgf("Cannot connect to Provider server: %+v", err)
 		}
 	})
 	return nil
@@ -131,7 +133,7 @@ func (p *Provider) loadConfiguration(ctx context.Context, configurationChan chan
 	_, err := fnvHasher.Write(tasksString)
 
 	if err != nil {
-		p.logger.Errorf("cannot hash mesos tasks data: ", err.Error())
+		p.logger.Error().Msgf("cannot hash mesos tasks data: ", err.Error())
 		return err
 	}
 
@@ -141,10 +143,10 @@ func (p *Provider) loadConfiguration(ctx context.Context, configurationChan chan
 	hash := fnvHasher.Sum64()
 
 	if timeDiff >= p.ForceUpdateInterval.Minutes() {
-		p.logger.Infof("Force Update Traefik Config", timeDiff)
+		p.logger.Info().Msgf("Force Update Traefik Config", timeDiff)
 	} else {
 		if hash == p.lastConfigurationHash {
-			p.logger.Debug("nothing to update.")
+			p.logger.Debug().Msg("nothing to update.")
 			return nil
 		}
 	}
@@ -174,13 +176,13 @@ func (p *Provider) loadConfiguration(ctx context.Context, configurationChan chan
 	if len(p.mesosConfig) > 0 {
 		configuration := p.buildConfiguration(ctx)
 		if configuration != nil {
-			p.logger.Info("Update Traefik Config")
+			p.logger.Info().Msg("Update Traefik Config")
 			configurationChan <- dynamic.Message{
 				ProviderName:  "mesos",
 				Configuration: configuration,
 			}
 		} else {
-			p.logger.Error("Build traefik config error")
+			p.logger.Error().Msg("Build traefik config error")
 		}
 	}
 
@@ -211,7 +213,7 @@ func (p *Provider) getTasks() MesosTasks {
 	res, err := client.Do(req)
 
 	if err != nil {
-		p.logger.Error("Error during get tasks: ", err.Error())
+		p.logger.Error().Msgf("Error during get tasks: ", err.Error())
 		return MesosTasks{}
 	}
 	defer res.Body.Close()
@@ -221,12 +223,12 @@ func (p *Provider) getTasks() MesosTasks {
 		return MesosTasks{}
 	}
 
-	p.logger.Debug("Get Data from Mesos")
+	p.logger.Debug().Msg("Get Data from Mesos")
 
 	var tasks MesosTasks
 	err = json.NewDecoder(res.Body).Decode(&tasks)
 	if err != nil {
-		p.logger.Error("Error in Data from Mesos: " + err.Error())
+		p.logger.Error().Msg("Error in Data from Mesos: " + err.Error())
 		return MesosTasks{}
 	}
 	return tasks
@@ -236,17 +238,17 @@ func (p *Provider) checkContainer(task MesosTask) bool {
 	agentHostname, agentPort, err := p.getAgent(task.SlaveID)
 
 	if err != nil {
-		p.logger.Error("CheckContainer: Error in get AgentData from Mesos: " + err.Error())
+		p.logger.Error().Msg("CheckContainer: Error in get AgentData from Mesos: " + err.Error())
 		return false
 	}
 
-	p.logger.Debug("CheckContainer: " + task.Name + " on agent (" + task.SlaveID + ")" + agentHostname + " with task.ID " + task.ID)
+	p.logger.Debug().Msg("CheckContainer: " + task.Name + " on agent (" + task.SlaveID + ")" + agentHostname + " with task.ID " + task.ID)
 
 	if agentHostname != "" {
 		containers, _ := p.getContainersOfAgent(agentHostname, agentPort)
 
 		for _, a := range containers {
-			p.logger.Debug(task.ID + " --CONTAINER--  " + a.ExecutorID)
+			p.logger.Debug().Msg(task.ID + " --CONTAINER--  " + a.ExecutorID)
 			if a.ExecutorID == task.ID {
 				return true
 			}
@@ -268,7 +270,7 @@ func (p *Provider) getAgent(slaveID string) (string, int, error) {
 	res, err := client.Do(req)
 
 	if err != nil {
-		p.logger.Error("Error during get agent: ", err.Error())
+		p.logger.Error().Msgf("Error during get agent: ", err.Error())
 		return "", 0, err
 	}
 	defer res.Body.Close()
@@ -280,7 +282,7 @@ func (p *Provider) getAgent(slaveID string) (string, int, error) {
 	data, err := io.ReadAll(res.Body)
 	var agents MesosAgent
 	if err := json.Unmarshal(data, &agents); err != nil {
-		p.logger.Error("getAgent: Error in AgentData from Mesos  " + p.Endpoint + " with error: " + err.Error())
+		p.logger.Error().Msg("getAgent: Error in AgentData from Mesos  " + p.Endpoint + " with error: " + err.Error())
 		return "", 0, err
 	}
 
@@ -311,7 +313,7 @@ func (p *Provider) getContainersOfAgent(agentHostname string, agentPort int) (Me
 	res, err := client.Do(req)
 
 	if err != nil {
-		p.logger.Error("Error during get container: ", err.Error())
+		p.logger.Error().Msgf("Error during get container: ", err.Error())
 		return MesosAgentContainers{}, err
 	}
 	defer res.Body.Close()
@@ -323,7 +325,7 @@ func (p *Provider) getContainersOfAgent(agentHostname string, agentPort int) (Me
 	data, err := io.ReadAll(res.Body)
 	var containers MesosAgentContainers
 	if err := json.Unmarshal(data, &containers); err != nil {
-		p.logger.Error("getContainersOfAgent: Error in ContainerAgentData from " + agentHostname + "  " + err.Error())
+		p.logger.Error().Msg("getContainersOfAgent: Error in ContainerAgentData from " + agentHostname + "  " + err.Error())
 		return MesosAgentContainers{}, err
 	}
 
