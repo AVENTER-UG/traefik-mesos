@@ -6,6 +6,10 @@
 
 These provider will add the functionality to use traefik with Apache Mesos.
 
+## Funding
+
+[![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=H553XE4QJ9GJ8)
+
 ## Issues
 
 To open an issue, please use this place: https://github.com/m3scluster/traefik-mesos/issues
