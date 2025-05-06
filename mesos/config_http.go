@@ -44,10 +44,8 @@ func (p *Provider) buildHTTPServiceConfiguration(ctx context.Context, containerN
 					lb = configuration.Services[service.Service].LoadBalancer
 				}
 
-				if lb.Servers == nil {
-					server := dynamic.Server{}
-					server.SetDefaults()
-					lb.Servers = []dynamic.Server{server}
+				if len(lb.Servers) == 0 {
+					lb.Servers = []dynamic.Server{{}}
 				}
 
 				lb.Servers = p.getHTTPServers(service.Service, containerName, lb)
