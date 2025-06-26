@@ -2,7 +2,7 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v2.11.24
+TAG=v2.11.26
 BRANCH=$(shell git symbolic-ref --short HEAD | xargs basename)
 BRANCHSHORT=$(shell echo ${BRANCH} | awk -F. '{ print $$1"."$$2 }')
 IMAGEFULLNAME=avhost/${IMAGENAME}
