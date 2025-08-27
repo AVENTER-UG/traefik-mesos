@@ -2,7 +2,7 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v3.4.4
+TAG=v3.5.1
 BRANCH=$(shell git symbolic-ref --short HEAD | xargs basename)
 BRANCHSHORT=$(shell echo ${BRANCH} | awk -F. '{ print $$1"."$$2 }')
 IMAGEFULLNAME=avhost/${IMAGENAME}
@@ -38,6 +38,7 @@ clone:
 patch:
 	patch -u traefik_repo/pkg/config/static/static_config.go -i static_config.patch
 	patch -u traefik_repo/pkg/provider/aggregator/aggregator.go -i aggregator.patch
+	patch -u traefik_repo/webui/src/components/icons/providers/index.tsx -i ProviderIcon.patch
 	cp -pr mesos traefik_repo/pkg/provider/
 
 build: 
@@ -46,8 +47,8 @@ build:
 	@cd traefik_repo; go get -d 
 	@cd traefik_repo; go get github.com/mesos/mesos-go/api/v0/detector/zoo
 	@cd traefik_repo; go mod tidy
+	cp static/Mesos.tsx traefik_repo/webui/src/components/icons/providers
 	cd traefik_repo; $(MAKE) generate-webui
-	cp static/mesos.svg traefik_repo/webui/static/providers/
 	export VERSION=${BUILD_VERSION}; cd traefik_repo; $(MAKE)
 
 build-docker: build
