@@ -1,0 +1,21 @@
+--- traefik_repo/webui/src/components/icons/providers/index.tsx        2025-08-27 23:47:36.062150398 +0200
++++ traefik_repo/webui/src/components/icons/providers/index_b.tsx      2025-08-27 23:49:59.627748652 +0200
+@@ -10,6 +10,7 @@
+ import Internal from 'components/icons/providers/Internal'
+ import Kubernetes from 'components/icons/providers/Kubernetes'
++import Mesos from 'components/icons/providers/Mesos'
+ import Nomad from 'components/icons/providers/Nomad'
+ import Plugin from 'components/icons/providers/Plugin'
+ import Redis from 'components/icons/providers/Redis'
+ import Zookeeper from 'components/icons/providers/Zookeeper'
+@@ -52,6 +53,9 @@
++    if (['mesos', 'mesos-'].some((prefix) => nameLowerCase.startsWith(prefix))) {
++      return Mesos
++    }
+     if (['nomad', 'nomad-'].some((prefix) => nameLowerCase.startsWith(prefix))) {
+       return Nomad
+     }
+     if (['plugin', 'plugin-'].some((prefix) => nameLowerCase.startsWith(prefix))) {
+       return Plugin
+     }
+
