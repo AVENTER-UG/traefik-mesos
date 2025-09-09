@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-ENV ARCH amd64
+ENV ARCH=amd64
 
 ADD traefik_repo/dist/linux/${ARCH}/traefik /traefik
 ADD entrypoint.sh /entrypoint.sh
