@@ -2,8 +2,9 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v3.5.2
-BRANCH=$(shell git symbolic-ref --short HEAD | xargs basename)
+TAG=v3.5.4
+UPDATE=-1
+BRANCH=${TAG}${UPDATE}
 BRANCHSHORT=$(shell echo ${BRANCH} | awk -F. '{ print $$1"."$$2 }')
 IMAGEFULLNAME=avhost/${IMAGENAME}
 BUILDDATE=$(shell date -u +%Y%m%d)
@@ -24,18 +25,13 @@ help:
 
 .DEFAULT_GOAL := all
 
-ifeq (${BRANCH}, master) 
-        BRANCH=latest
-        BRANCHSHORT=latest
-endif
-
 clone: 
 	@if [ ! -d "traefik_repo" ] ; then \
 		git clone https://github.com/traefik/traefik.git traefik_repo; \
 	fi
 	cd traefik_repo;	git checkout $(TAG)
 
-patch:	
+patch:
 	patch -u traefik_repo/pkg/config/static/static_config.go -i static_config.patch
 	patch -u traefik_repo/pkg/provider/aggregator/aggregator.go -i aggregator.patch
 	patch -u traefik_repo/webui/src/components/icons/providers/index.tsx -i ProviderIcon.patch
@@ -56,16 +52,29 @@ build-docker: build
 	docker build -t ${IMAGEFULLNAME}:latest . 
 
 push: build
-	@echo ">>>> Publish it to repo" ${BRANCH}_${BUILDDATE}
-	docker buildx create --use --name buildkit
-	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH} .
-	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCHSHORT} .
-	docker buildx build --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:latest .
-	docker buildx rm buildkit
+	@echo ">>>> Publish it to repo" ${BRANCH} ${BUILDSHORT}
+	-docker buildx create --use --name buildkit
+	@docker buildx build --sbom=true --provenance=true --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCH} .
+	@docker buildx build --sbom=true --provenance=true --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:${BRANCHSHORT} .
+	@docker buildx build --sbom=true --provenance=true --platform linux/amd64 --push --build-arg VERSION=${TAG} -t ${IMAGEFULLNAME}:latest .
+	-docker buildx rm buildkit
 
 clean:
 	rm -rf traefik_repo
 
+update-gomod:
+	go get -u
+	go mod tidy
 
+seccheck:
+	grype --add-cpes-if-none .
 
-all: clone patch build-docker
+sboom:
+	syft dir:. > sbom.txt
+	syft dir:. -o json > sbom.json
+
+imagecheck:
+	grype --add-cpes-if-none ${IMAGEFULLNAME}:latest > cve-report.md
+
+check: sboom seccheck imagecheck
+all: clone patch build-docker check
