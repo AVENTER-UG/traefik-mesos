@@ -2,7 +2,7 @@
 
 #vars
 IMAGENAME=traefik_mesos
-TAG=v3.5.4
+TAG=v3.6.5
 UPDATE=-1
 BRANCH=${TAG}${UPDATE}
 BRANCHSHORT=$(shell echo ${BRANCH} | awk -F. '{ print $$1"."$$2 }')

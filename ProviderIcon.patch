@@ -1,7 +1,7 @@
 --- traefik_repo/webui/src/components/icons/providers/index.tsx        2025-08-27 23:47:36.062150398 +0200
 +++ traefik_repo/webui/src/components/icons/providers/index_b.tsx      2025-08-27 23:49:59.627748652 +0200
 @@ -10,6 +10,7 @@
- import Internal from 'components/icons/providers/Internal'
+ import Knative from 'components/icons/providers/Knative'
  import Kubernetes from 'components/icons/providers/Kubernetes'
 +import Mesos from 'components/icons/providers/Mesos'
  import Nomad from 'components/icons/providers/Nomad'
