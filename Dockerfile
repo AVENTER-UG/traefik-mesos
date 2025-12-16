@@ -1,4 +1,4 @@
-FROM alpine:3.19
+FROM alpine:3.22
 LABEL maintainer="Andreas Peters <support@aventer.biz>"
 LABEL org.opencontainers.image.title="traefik-mesos" 
 LABEL org.opencontainers.image.description="Traefik Proxy/Loadbalancer with Apache Mesos/ClusterD Provider"
