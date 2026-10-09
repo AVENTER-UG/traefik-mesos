@@ -11,7 +11,6 @@ import (
 
 func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuration {
 	configurations := make(map[string]*dynamic.Configuration)
-	labels := make(map[string]string)
 	for _, tasks := range p.mesosConfig {
 		var task MesosTask
 		// search the running task
@@ -22,6 +21,11 @@ func (p *Provider) buildConfiguration(ctx context.Context) *dynamic.Configuratio
 		}
 
 		if task.Labels != nil {
+			// labels must be scoped to a single task: reusing one map across
+			// tasks leaks every previously decoded label into the next task's
+			// configuration, which can make distinct tasks emit identically
+			// named routers/services with different configurations.
+			labels := make(map[string]string)
 			containerName := task.ID
 			for _, label := range task.Labels {
 				key := strings.ReplaceAll(label.Key, "__mesos_taskid__", strings.ReplaceAll(task.ID, ".", "_"))
